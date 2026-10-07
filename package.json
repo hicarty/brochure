@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "brochure": "tsx src/generator.ts",
     "test": "npx tsx src/index.ts examples/playprouk.json /tmp/test-proposal.pdf --brand playprouk && npx tsx src/index.ts examples/smart-meter.json /tmp/test-smarts.pdf --brand smart-meter && npx tsx src/index.ts examples/playprouk.json /tmp/test-default.pdf && echo 'All 3 TS renders OK' && rm -f /tmp/test-*.pdf"
   },
   "keywords": [],

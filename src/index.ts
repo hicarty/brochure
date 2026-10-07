@@ -18,7 +18,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { generateProposalPdf, MAX_PAGES } from './generator';
+import {
+  A4BrochureGenerator,
+  generateProposalPdf,
+  MAX_PAGES,
+} from './generator';
 import {
   CLUSTER_THEME,
   THEMES,
@@ -35,7 +39,12 @@ import {
 
 export * from './types';
 export * from './theme';
-export { generateProposalPdf, planPages, MAX_PAGES } from './generator';
+export {
+  A4BrochureGenerator,
+  generateProposalPdf,
+  planPages,
+  MAX_PAGES,
+} from './generator';
 export {
   PROMPT_TEMPLATE,
   promptForBrand,
