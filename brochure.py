@@ -1,6 +1,11 @@
+"""ReportLab PDF generators for branded brochures and 16:9 proposal pages."""
+
+import argparse
+from pathlib import Path
+
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.lib.units import mm
+from reportlab.lib.units import inch, mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import Paragraph
@@ -363,9 +368,178 @@ FOOTER_CONF  = BRAND['footer_confidential']
 CONTACT_EMAIL = BRAND['contact_email']
 DAY_RATE     = BRAND['day_rate']
 DAY_RATE_SUB = BRAND['day_rate_sub']
-OUTPUT = f"/Users/havenc/Sites/cluster-proposal-generator/output/{LOGO_TEXT.replace(' & ', '_').replace(' ', '')}_Brochure.pdf"
+OUTPUT = Path(__file__).resolve().parent / "output" / f"{LOGO_TEXT.replace(' & ', '_').replace(' ', '')}_Brochure.pdf"
 
 # ── Drawing helpers ──────────────────────────────────────────────────
+INTEGRATE_ORANGE = colors.HexColor('#F05539')
+INTEGRATE_DARK = colors.HexColor('#242328')
+INTEGRATE_CARD_DARK = colors.HexColor('#1B1A1F')
+INTEGRATE_BLUE = colors.HexColor('#286FBF')
+INTEGRATE_TEAL = colors.HexColor('#2A6C86')
+INTEGRATE_GREEN = colors.HexColor('#8FBF5C')
+INTEGRATE_WHITE = colors.white
+INTEGRATE_GREY = colors.HexColor('#C9C7C5')
+INTEGRATE_GREY_DARK = colors.HexColor('#9A9793')
+INTEGRATE_DIVIDER = colors.HexColor('#3A3940')
+INTEGRATE_COLORS = {
+    'orange': INTEGRATE_ORANGE,
+    'dark': INTEGRATE_DARK,
+    'card_dark': INTEGRATE_CARD_DARK,
+    'blue': INTEGRATE_BLUE,
+    'teal': INTEGRATE_TEAL,
+    'green': INTEGRATE_GREEN,
+    'white': INTEGRATE_WHITE,
+    'grey': INTEGRATE_GREY,
+    'grey_dark': INTEGRATE_GREY_DARK,
+    'divider': INTEGRATE_DIVIDER,
+}
+INTEGRATE_FONT_HEAD = 'Helvetica-Bold'
+INTEGRATE_FONT_BODY = 'Helvetica'
+INTEGRATE_PAGE_W = 13.333 * inch
+INTEGRATE_PAGE_H = 7.5 * inch
+
+
+def new_integrate_pdf(path):
+    """Create a blank 16:9 PDF canvas for Integrate-themed pages."""
+    pdf = canvas.Canvas(str(path), pagesize=(INTEGRATE_PAGE_W, INTEGRATE_PAGE_H))
+    pdf.setTitle('Integrate Proposal')
+    return pdf
+
+
+def integrate_add_page(pdf, bg_color=INTEGRATE_ORANGE):
+    """Fill the current 16:9 PDF page with a solid background."""
+    pdf.saveState()
+    pdf.setFillColor(bg_color)
+    pdf.rect(0, 0, INTEGRATE_PAGE_W, INTEGRATE_PAGE_H, fill=1, stroke=0)
+    pdf.restoreState()
+
+
+def _integrate_paragraph(pdf, text, x, y, w, h, size, color, font,
+                         bold=False, italic=False, align=TA_LEFT,
+                         line_spacing=1.25):
+    if bold and italic:
+        font = 'Helvetica-BoldOblique'
+    elif bold:
+        font = 'Helvetica-Bold'
+    elif italic:
+        font = 'Helvetica-Oblique'
+    style = ParagraphStyle(
+        'integrate_text', fontName=font, fontSize=size, textColor=color,
+        leading=size * line_spacing, alignment=align,
+    )
+    paragraph = Paragraph(text.replace('\n', '<br/>'), style)
+    _, height = paragraph.wrap(w * inch, h * inch)
+    paragraph.drawOn(pdf, x * inch, INTEGRATE_PAGE_H - y * inch - height)
+    return height
+
+
+def integrate_page_num(pdf, number, color=INTEGRATE_WHITE):
+    _integrate_paragraph(pdf, f'{number:02d}', 0.4, 0.28, 0.8, 0.35,
+                         12, color, INTEGRATE_FONT_BODY, bold=True)
+
+
+def integrate_eyebrow(pdf, text, x=0.55, y=0.35, w=9, color=INTEGRATE_WHITE):
+    _integrate_paragraph(pdf, text.upper(), x, y, w, 0.35, 12, color,
+                         INTEGRATE_FONT_BODY, bold=True)
+
+
+def integrate_title(pdf, text, x=0.55, y=0.65, w=10.8, h=0.95,
+                    size=32, color=INTEGRATE_WHITE):
+    _integrate_paragraph(pdf, text, x, y, w, h, size, color,
+                         INTEGRATE_FONT_HEAD, bold=True)
+
+
+def integrate_subtitle(pdf, text, x=0.55, y=1.55, w=10.8, h=0.6,
+                       size=14, color=INTEGRATE_GREY):
+    _integrate_paragraph(pdf, text, x, y, w, h, size, color,
+                         INTEGRATE_FONT_BODY)
+
+
+def integrate_body_text(pdf, text, x, y, w, h, size=12, color=INTEGRATE_GREY,
+                        bold=False, italic=False, align=TA_LEFT,
+                        line_spacing=1.25):
+    return _integrate_paragraph(pdf, text, x, y, w, h, size, color,
+                                INTEGRATE_FONT_BODY, bold, italic, align,
+                                line_spacing)
+
+
+def integrate_footer_logo(pdf, path, x=11.55, y=6.95, w=1.35, h=0.293):
+    pdf.drawImage(path, x * inch, INTEGRATE_PAGE_H - (y + h) * inch,
+                  w * inch, h * inch, preserveAspectRatio=True, mask='auto')
+
+
+def integrate_rounded_rect(pdf, x, y, w, h, fill=INTEGRATE_CARD_DARK,
+                           radius=0.08):
+    pdf.saveState()
+    pdf.setFillColor(fill)
+    pdf.roundRect(x * inch, INTEGRATE_PAGE_H - (y + h) * inch,
+                  w * inch, h * inch, radius * inch, fill=1, stroke=0)
+    pdf.restoreState()
+
+
+def integrate_circle(pdf, x, y, diameter, fill=INTEGRATE_ORANGE):
+    pdf.saveState()
+    pdf.setFillColor(fill)
+    pdf.circle((x + diameter / 2) * inch,
+               INTEGRATE_PAGE_H - (y + diameter / 2) * inch,
+               diameter * inch / 2, fill=1, stroke=0)
+    pdf.restoreState()
+
+
+def integrate_divider_line(pdf, x, y, w, color=INTEGRATE_DIVIDER,
+                           weight_pt=0.75):
+    pdf.saveState()
+    pdf.setStrokeColor(color)
+    pdf.setLineWidth(weight_pt)
+    pdf.line(x * inch, INTEGRATE_PAGE_H - y * inch,
+             (x + w) * inch, INTEGRATE_PAGE_H - y * inch)
+    pdf.restoreState()
+
+
+def integrate_mission_blob(pdf, x=7.15, y=0.55, w=5.6, h=6.4,
+                           fill=INTEGRATE_BLUE, radius=0.35):
+    return integrate_rounded_rect(pdf, x, y, w, h, fill=fill, radius=radius)
+
+
+def integrate_card(pdf, x, y, w, h, glyph, card_title, card_body,
+                   icon_color=INTEGRATE_ORANGE,
+                   card_fill=INTEGRATE_CARD_DARK):
+    integrate_rounded_rect(pdf, x, y, w, h, fill=card_fill)
+    diameter = 0.58
+    circle_x = x + w / 2 - diameter / 2
+    integrate_circle(pdf, circle_x, y + 0.3, diameter, fill=icon_color)
+    integrate_body_text(pdf, glyph, circle_x, y + 0.37, diameter, 0.4,
+                        size=18, color=INTEGRATE_WHITE, bold=True,
+                        align=TA_CENTER)
+    integrate_body_text(pdf, card_title, x + 0.18, y + 1.05,
+                        w - 0.36, 0.6, size=14, color=INTEGRATE_WHITE,
+                        bold=True, align=TA_CENTER, line_spacing=1.05)
+    integrate_body_text(pdf, card_body, x + 0.2, y + 1.7,
+                        w - 0.4, h - 1.9, size=10.5, color=INTEGRATE_GREY,
+                        align=TA_CENTER, line_spacing=1.18)
+
+
+def integrate_stat_chip(pdf, x, y, w, h, value, label,
+                        value_color=INTEGRATE_GREEN):
+    integrate_rounded_rect(pdf, x, y, w, h, fill=INTEGRATE_CARD_DARK,
+                           radius=0.06)
+    integrate_body_text(pdf, value, x + 0.1, y + 0.12, w - 0.2,
+                        h * 0.55, size=24, color=value_color, bold=True,
+                        align=TA_CENTER)
+    integrate_body_text(pdf, label, x + 0.1, y + h * 0.62, w - 0.2,
+                        h * 0.35, size=10.5, color=INTEGRATE_GREY,
+                        align=TA_CENTER)
+
+
+# Glyph shorthand used across Integrate-themed pages.
+GLYPH_ARROW = '\u2192'
+GLYPH_SQUARE = '\u25A0'
+GLYPH_DOT = '\u25CF'
+GLYPH_TRI = '\u25B2'
+GLYPH_RING = '\u25CE'
+GLYPH_STAR = '\u2726'
+
+
 def logo(c, x, y, size=22):
     c.saveState()
     c.setFillColor(C['cyan'])
@@ -923,21 +1097,48 @@ def page_next_steps(c):
     c.drawRightString(mx + mw - 16, cy - 36, "excl. VAT")
     _footer_dark(c, 7)
 
-# ═══════════════════════════════════════════════════════════════════
-# BUILD
-# ═══════════════════════════════════════════════════════════════════
-c = canvas.Canvas(OUTPUT, pagesize=A4)
-c.setTitle(f"{LOGO_TEXT} — Software Consultancy Brochure")
-c.setAuthor(BRAND['author'])
-c.setSubject(f"Software Consultancy Brochure — {LOGO_TEXT}")
+def generate_pdf(brand=ACTIVE_BRAND, output=None):
+    """Generate and return the path to a seven-page A4 brochure PDF."""
+    if brand not in BRANDS:
+        raise ValueError(f"Unknown brand {brand!r}; choose from: {', '.join(sorted(BRANDS))}")
 
-page_cover(c);       c.showPage()
-page_brief(c);       c.showPage()
-page_services(c);    c.showPage()
-page_timescales(c);  c.showPage()
-page_team(c);        c.showPage()
-page_portfolio(c);   c.showPage()
-page_next_steps(c);  c.showPage()
+    global ACTIVE_BRAND, BRAND, C, LOGO_TEXT, FOOTER_CONF
+    global CONTACT_EMAIL, DAY_RATE, DAY_RATE_SUB, OUTPUT
+    ACTIVE_BRAND = brand
+    BRAND = BRANDS[brand]
+    C = BRAND['colors']
+    LOGO_TEXT = BRAND['logo_text']
+    FOOTER_CONF = BRAND['footer_confidential']
+    CONTACT_EMAIL = BRAND['contact_email']
+    DAY_RATE = BRAND['day_rate']
+    DAY_RATE_SUB = BRAND['day_rate_sub']
+    default_name = f"{LOGO_TEXT.replace(' & ', '_').replace(' ', '')}_Brochure.pdf"
+    OUTPUT = Path(output) if output is not None else Path(__file__).resolve().parent / 'output' / default_name
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 
-c.save()
-print("Done:", OUTPUT)
+    pdf = canvas.Canvas(str(OUTPUT), pagesize=A4)
+    pdf.setTitle(f"{LOGO_TEXT} — Software Consultancy Brochure")
+    pdf.setAuthor(BRAND['author'])
+    pdf.setSubject(f"Software Consultancy Brochure — {LOGO_TEXT}")
+
+    pages = (page_cover, page_brief, page_services, page_timescales,
+             page_team, page_portfolio, page_next_steps)
+    for page in pages:
+        page(pdf)
+        pdf.showPage()
+
+    pdf.save()
+    return OUTPUT
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='Generate a branded proposal PDF.')
+    parser.add_argument('--brand', choices=sorted(BRANDS), default=ACTIVE_BRAND)
+    parser.add_argument('--output', help='PDF output path (default: output/<brand>_Brochure.pdf)')
+    args = parser.parse_args(argv)
+    output = generate_pdf(brand=args.brand, output=args.output)
+    print('Done:', output)
+
+
+if __name__ == '__main__':
+    main()
