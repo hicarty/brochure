@@ -60,7 +60,7 @@ The object-oriented Node brochure generator is based on the branded A4 brochure 
 - **Node.js:** `pdf-lib`, installed from npm as `pdf-lib` and imported from `'pdf-lib'`. The repository uses this existing dependency; `pdfgenjs` is not an npm package.
 
 ```bash
-npm run brochure -- [--brand cluster|playprouk|smart-meter] [--output <path>]
+npm run brochure -- [--brand cluster|playprouk|smart-meter] [--theme integrate] [--output <path>]
 ```
 
 Examples:
@@ -72,11 +72,14 @@ npm run brochure
 # Select a brand and output path
 npm run brochure -- --brand playprouk --output output/PlayProUK_Brochure.pdf
 
+# Apply the Integrate palette to a brand's brochure content
+npm run brochure -- --brand cluster --theme integrate --output output/Cluster_Integrate.pdf
+
 # Show CLI options
 npm run brochure -- --help
 ```
 
-By default, PDFs are written to `output/<brand>_Brochure.pdf`. The output directory is created automatically. The Node and Python brochure generators support `cluster`, `playprouk`, and `smart-meter`.
+By default, PDFs are written to `output/<brand>_Brochure.pdf`. The output directory is created automatically. The Node and Python brochure generators support `cluster`, `playprouk`, and `smart-meter`; the Node generator also supports `--theme integrate` to apply the Integrate palette independently of the selected brand content.
 
 ### Brands and themes
 

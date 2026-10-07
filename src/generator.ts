@@ -359,6 +359,36 @@ const clusterColors = {
   darkBgText: '#A8B8D0',
 };
 
+export const INTEGRATE_THEME = {
+  orange: '#F05539',
+  dark: '#242328',
+  cardDark: '#1B1A1F',
+  blue: '#286FBF',
+  teal: '#2A6C86',
+  green: '#8FBF5C',
+  white: '#FFFFFF',
+  grey: '#C9C7C5',
+  greyDark: '#9A9793',
+  divider: '#3A3940',
+} as const;
+
+const integrateBrochureColors: Record<string, string> = {
+  navy: INTEGRATE_THEME.dark,
+  navyLight: INTEGRATE_THEME.cardDark,
+  cyan: INTEGRATE_THEME.orange,
+  cyanSoft: '#FCEBE7',
+  white: INTEGRATE_THEME.white,
+  offwhite: '#F7F6F5',
+  mid: INTEGRATE_THEME.greyDark,
+  darkText: INTEGRATE_THEME.dark,
+  lightText: INTEGRATE_THEME.divider,
+  rule: INTEGRATE_THEME.grey,
+  greenDot: INTEGRATE_THEME.green,
+  darkBgText: INTEGRATE_THEME.grey,
+  blue: INTEGRATE_THEME.blue,
+  teal: INTEGRATE_THEME.teal,
+};
+
 const brands: Record<string, BrochureBrand> = {
   cluster: {
     name: 'Cluster Technology',
@@ -834,8 +864,8 @@ function drawBrief(
 
   const cards = [
     ['MISSION', brand.mission, c.cyan],
-    ['VISION', brand.vision, c.navy],
-    ['PURPOSE', brand.purpose, '#1A5276'],
+    ['VISION', brand.vision, c.blue ?? c.navy],
+    ['PURPOSE', brand.purpose, c.teal ?? '#1A5276'],
   ];
   const cardWidth = (width - 16) / 3;
   cards.forEach(([title, body, accent], index) => {
@@ -1193,12 +1223,17 @@ export class A4BrochureGenerator {
   private readonly brand: BrochureBrand;
   private readonly outputPath?: string;
 
-  constructor(brandSlug = 'cluster', outputPath?: string) {
+  constructor(brandSlug = 'cluster', outputPath?: string, themeId?: string) {
     const brand = brands[brandSlug];
     if (!brand) {
       throw new Error('Unknown brand "' + brandSlug + '". Choose from: ' + Object.keys(brands).join(', '));
     }
-    this.brand = brand;
+    if (themeId && themeId !== 'integrate') {
+      throw new Error('Unknown theme "' + themeId + '". Choose from: integrate.');
+    }
+    this.brand = themeId === 'integrate'
+      ? { ...brand, colors: integrateBrochureColors }
+      : brand;
     this.outputPath = outputPath;
   }
 
@@ -1238,9 +1273,10 @@ export class A4BrochureGenerator {
   }
 }
 
-function parseBrochureArgs(args: string[]): { brand: string; output?: string } {
+function parseBrochureArgs(args: string[]): { brand: string; output?: string; theme?: string } {
   let brand = 'cluster';
   let output: string | undefined;
+  let theme: string | undefined;
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     if (argument === '--brand') {
@@ -1253,22 +1289,28 @@ function parseBrochureArgs(args: string[]): { brand: string; output?: string } {
       if (!value || value.startsWith('--')) throw new Error('--output requires a path.');
       output = value;
       index += 1;
+    } else if (argument === '--theme') {
+      const value = args[index + 1];
+      if (!value || value.startsWith('--')) throw new Error('--theme requires a value.');
+      theme = value;
+      index += 1;
     } else if (argument === '--help' || argument === '-h') {
-      console.log('Usage: npm run brochure -- [--brand cluster|playprouk|smart-meter] [--output file.pdf]');
+      console.log('Usage: npm run brochure -- [--brand cluster|playprouk|smart-meter] [--theme integrate] [--output file.pdf]');
       return { brand: '__help__' };
     } else {
       throw new Error('Unknown argument "' + argument + '". Use --help for usage.');
     }
   }
-  return { brand, output };
+  return { brand, output, theme };
 }
 
 async function runBrochureCli(): Promise<void> {
   try {
-    const { brand, output } = parseBrochureArgs(process.argv.slice(2));
+    const { brand, output, theme } = parseBrochureArgs(process.argv.slice(2));
     if (brand === '__help__') return;
-    const destination = await new A4BrochureGenerator(brand, output).generate();
-    console.log('Wrote ' + destination + ' (7-page A4 brochure, brand: ' + brand + ').');
+    const destination = await new A4BrochureGenerator(brand, output, theme).generate();
+    console.log('Wrote ' + destination + ' (7-page A4 brochure, brand: ' + brand +
+      (theme ? ', theme: ' + theme : '') + ').');
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
